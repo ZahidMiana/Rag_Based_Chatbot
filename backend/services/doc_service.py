@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from backend.models.document import Document
 from backend.schemas.document import DocumentResponse, DocumentStatusResponse
 from core.document_loader import DocumentLoader
+from core.vectorstore import get_vector_store_manager
 from configs.logger import get_logger
 
 logger = get_logger(__name__)
@@ -92,9 +93,10 @@ def ingest_document(
 ) -> None:
     """
     Full ingestion pipeline: load → chunk → embed+store → update status.
-    Called as a background task after the record is already created.
-    vector_store_manager is injected from Module 3 when ready.
+    Uses the singleton VectorStoreManager if none is explicitly passed.
     """
+    if vector_store_manager is None:
+        vector_store_manager = get_vector_store_manager()
     tmp_path = None
     try:
         # Save to temp file
@@ -127,9 +129,8 @@ def ingest_document(
                     },
                 })
 
-        # Store in vector store (Module 3 wires this up)
-        if vector_store_manager is not None:
-            vector_store_manager.add_documents(user_id, all_chunks)
+        # Store in vector store
+        vector_store_manager.add_documents(user_id, all_chunks)
 
         _update_status(db, doc_id, "ready", chunk_count=len(all_chunks))
         logger.info("ingestion_complete", doc_id=doc_id, chunks=len(all_chunks))
@@ -145,6 +146,8 @@ def ingest_document(
 def delete_document(
     db: Session, user_id: str, doc_id: str, vector_store_manager=None
 ) -> bool:
+    if vector_store_manager is None:
+        vector_store_manager = get_vector_store_manager()
     doc = (
         db.query(Document)
         .filter(Document.id == doc_id, Document.user_id == user_id)
@@ -153,11 +156,10 @@ def delete_document(
     if not doc:
         return False
 
-    if vector_store_manager is not None:
-        try:
-            vector_store_manager.delete_document(user_id, doc_id)
-        except Exception as e:
-            logger.error("vectorstore_delete_failed", doc_id=doc_id, error=str(e))
+    try:
+        vector_store_manager.delete_document(user_id, doc_id)
+    except Exception as e:
+        logger.error("vectorstore_delete_failed", doc_id=doc_id, error=str(e))
 
     db.delete(doc)
     db.commit()
