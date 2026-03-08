@@ -1,35 +1,30 @@
 # RAG Chatbot
 
-A production-ready Retrieval-Augmented Generation (RAG) chatbot that lets users upload their own documents and chat with them using semantic search and Google Gemini.
+Upload your documents and chat with them. Uses Google Gemini for answers and HuggingFace embeddings for search. Each user gets their own isolated document space.
 
 ---
 
-## Features
+## What it does
 
-- **Multi-format document support** — PDF, DOCX, TXT, Markdown, CSV, Excel, Web URLs
-- **Semantic search** — HuggingFace embeddings stored in ChromaDB for fast, accurate retrieval
-- **Google Gemini LLM** — Powered by `gemini-1.5-flash` (free tier)
-- **Multi-tenant** — Each user has fully isolated document collections and chat history
-- **JWT Authentication** — Access + refresh token flow with role-based access (user / admin)
-- **Streaming responses** — Token-by-token streaming from Gemini to the UI
-- **Source citations** — Every answer shows which document chunks were used
-- **FastAPI backend** — REST API with OpenAPI docs at `/docs`
-- **Streamlit frontend** — Clean chat UI with upload, document management, and admin panel
-
----
+- Upload PDF, DOCX, TXT, Markdown, CSV, Excel, or a web URL
+- Ask questions — answers come from your documents only
+- Source citations show exactly which document and page was used
+- Per-session conversation memory (last 5 turns)
+- Streaming responses token by token
+- Multi-user with isolated document collections
 
 ## Tech Stack
 
-| Layer | Technology |
+| Layer | Tech |
 |---|---|
-| LLM | Google Gemini 1.5 Flash (free API) |
-| Embeddings | `sentence-transformers/all-MiniLM-L6-v2` (local, free) |
-| Vector Store | ChromaDB (local persistent) |
-| Orchestration | LangChain |
+| LLM | Google Gemini 1.5 Flash |
+| Embeddings | `sentence-transformers/all-MiniLM-L6-v2` |
+| Vector Store | ChromaDB (local) |
+| RAG Framework | LangChain |
 | Backend | FastAPI + SQLAlchemy |
 | Database | SQLite |
 | Frontend | Streamlit |
-| Auth | JWT (python-jose + passlib bcrypt) |
+| Auth | JWT (python-jose + passlib) |
 
 ---
 
@@ -38,26 +33,26 @@ A production-ready Retrieval-Augmented Generation (RAG) chatbot that lets users 
 ```
 rag_chatbot/
 ├── backend/
-│   ├── main.py               # FastAPI app entry point
-│   ├── routers/              # auth, documents, chat, admin
-│   ├── models/               # SQLAlchemy ORM models
-│   ├── schemas/              # Pydantic request/response models
-│   ├── services/             # Business logic layer
-│   └── middleware/           # Auth, logging, rate limiting
+│   ├── main.py
+│   ├── routers/          # auth, documents, chat, admin
+│   ├── models/           # SQLAlchemy ORM models
+│   ├── schemas/          # Pydantic request/response models
+│   ├── services/         # Business logic
+│   └── middleware/       # Auth, logging, rate limiting
 ├── core/
-│   ├── document_loader.py    # Multi-format document ingestion
-│   ├── embeddings.py         # HuggingFace embeddings singleton
-│   ├── vectorstore.py        # ChromaDB operations (per-user)
-│   ├── llm.py                # Gemini LLM setup
-│   └── rag_chain.py          # ConversationalRetrievalChain
+│   ├── document_loader.py
+│   ├── embeddings.py
+│   ├── vectorstore.py
+│   ├── llm.py
+│   └── rag_chain.py
 ├── frontend/
-│   ├── app.py                # Streamlit multi-page UI
-│   └── api_client.py         # Centralized HTTP client
+│   ├── app.py
+│   └── api_client.py
 ├── db/
-│   └── database.py           # SQLAlchemy engine + session
+│   └── database.py
 ├── configs/
-│   ├── settings.py           # Pydantic settings (loads .env)
-│   └── logger.py             # Structlog setup
+│   ├── settings.py
+│   └── logger.py
 ├── tests/
 ├── .env.example
 └── requirements.txt
@@ -65,59 +60,42 @@ rag_chatbot/
 
 ---
 
-## Getting Started
-
-### 1. Clone the repo
+## Setup
 
 ```bash
 git clone https://github.com/ZahidMiana/Rag_Based_Chatbot.git
 cd Rag_Based_Chatbot
-```
 
-### 2. Create a virtual environment
-
-```bash
 python -m venv .venv
-source .venv/bin/activate   # Linux / macOS
-.venv\Scripts\activate      # Windows
-```
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
 
-### 3. Install dependencies
-
-```bash
 pip install -r requirements.txt
-```
 
-### 4. Set up environment variables
-
-```bash
 cp .env.example .env
 ```
 
-Edit `.env` and fill in:
+Edit `.env` and set your keys:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
-JWT_SECRET_KEY=your_strong_secret_key_here
+JWT_SECRET_KEY=your_secret_key_here
 ```
 
-Get a free Gemini API key at [https://aistudio.google.com](https://aistudio.google.com)
+Get a free Gemini API key at https://aistudio.google.com
 
-### 5. Run the backend
+---
+
+## Running
 
 ```bash
+# Backend
 uvicorn backend.main:app --reload --port 8000
-```
+# API docs: http://localhost:8000/docs
 
-API docs available at: `http://localhost:8000/docs`
-
-### 6. Run the frontend
-
-```bash
+# Frontend
 streamlit run frontend/app.py --server.port 8501
+# UI: http://localhost:8501
 ```
-
-Open: `http://localhost:8501`
 
 ---
 
@@ -126,49 +104,48 @@ Open: `http://localhost:8501`
 | Variable | Description | Default |
 |---|---|---|
 | `GEMINI_API_KEY` | Google Gemini API key | required |
-| `JWT_SECRET_KEY` | Secret for signing JWT tokens | required |
+| `JWT_SECRET_KEY` | JWT signing secret | required |
 | `HF_MODEL_NAME` | HuggingFace embedding model | `sentence-transformers/all-MiniLM-L6-v2` |
-| `CHROMA_DB_PATH` | Path to ChromaDB storage | `./chroma_db` |
+| `CHROMA_DB_PATH` | ChromaDB storage path | `./chroma_db` |
 | `DATABASE_URL` | SQLAlchemy DB URL | `sqlite:///./rag_chatbot.db` |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | JWT access token TTL | `30` |
-| `REFRESH_TOKEN_EXPIRE_DAYS` | JWT refresh token TTL | `7` |
-| `MAX_FILE_SIZE_MB` | Max upload file size | `50` |
-| `ALLOWED_ORIGINS` | CORS allowed origins | `http://localhost:8501` |
+| `MAX_FILE_SIZE_MB` | Max upload size | `50` |
+| `ALLOWED_ORIGINS` | CORS origins | `http://localhost:8501` |
 
 ---
 
-## API Overview
+## API Endpoints
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/auth/register` | POST | Register new user |
-| `/auth/login` | POST | Login, get JWT tokens |
-| `/auth/refresh` | POST | Refresh access token |
-| `/documents/upload` | POST | Upload a document (background) |
-| `/documents/list` | GET | List user's documents |
-| `/documents/{id}/status` | GET | Poll ingestion status |
-| `/chat/query` | POST | Send question, get RAG answer |
-| `/chat/history` | GET | Get chat history for session |
-| `/admin/users` | GET | List all users (admin only) |
-| `/admin/stats` | GET | Platform statistics (admin only) |
+| `/auth/register` | POST | Register a user |
+| `/auth/login` | POST | Login, returns JWT |
+| `/documents/upload` | POST | Upload a document |
+| `/documents/list` | GET | List uploaded documents |
+| `/documents/{id}/status` | GET | Check ingestion status |
+| `/chat/query` | POST | Ask a question |
+| `/chat/stream` | POST | Streaming answer (SSE) |
+| `/chat/history` | GET | Get session history |
+| `/chat/sessions` | GET | List all sessions |
+| `/admin/users` | GET | List users (admin) |
 
 ---
 
-## Build Modules
+## Build Progress
 
-| Module | Status | Description |
+| Module | Status | What was built |
 |---|---|---|
-| M1 | ✅ Done | Project foundation & configuration |
-| M2 | 🔜 | Document ingestion pipeline |
-| M3 | 🔜 | Embedding engine & ChromaDB |
-| M4 | 🔜 | RAG core engine (LangChain + Gemini) |
-| M5 | 🔜 | Multi-tenant auth (JWT) |
-| M6 | 🔜 | FastAPI REST API |
-| M7 | 🔜 | Streamlit frontend |
+| M1 | done | Project scaffold, config, logging, .env setup |
+| M2 | done | Document ingestion — 7 formats, chunking, dedup, DB storage |
+| M3 | done | HuggingFace embeddings, ChromaDB per-user collections, MMR search |
+| M4 | done | Gemini LLM, RAG chain, conversation memory, chat API endpoints |
+| M5 | pending | JWT auth, user model, protected routes |
+| M6 | pending | FastAPI main app, all routers wired together |
+| M7 | pending | Streamlit frontend |
 
 ---
 
-## Running Tests
+## Tests
 
 ```bash
 pytest tests/ -v
