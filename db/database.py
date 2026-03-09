@@ -22,7 +22,7 @@ def get_db():
 
 
 def init_db():
-    # Import all models so Base sees them before create_all
+    import backend.models.user      # noqa: F401
     import backend.models.document  # noqa: F401
     import backend.models.chat      # noqa: F401
     Base.metadata.create_all(bind=engine)
