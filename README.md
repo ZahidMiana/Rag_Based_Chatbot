@@ -120,6 +120,9 @@ streamlit run frontend/app.py --server.port 8501
 |---|---|---|
 | `/auth/register` | POST | Register a user |
 | `/auth/login` | POST | Login, returns JWT |
+| `/auth/refresh` | POST | Refresh access token |
+| `/auth/logout` | POST | Logout, invalidates refresh token |
+| `/auth/me` | GET | Current user info |
 | `/documents/upload` | POST | Upload a document |
 | `/documents/list` | GET | List uploaded documents |
 | `/documents/{id}/status` | GET | Check ingestion status |
@@ -139,7 +142,7 @@ streamlit run frontend/app.py --server.port 8501
 | M2 | done | Document ingestion — 7 formats, chunking, dedup, DB storage |
 | M3 | done | HuggingFace embeddings, ChromaDB per-user collections, MMR search |
 | M4 | done | Gemini LLM, RAG chain, conversation memory, chat API endpoints |
-| M5 | pending | JWT auth, user model, protected routes |
+| M5 | done | JWT auth, bcrypt, User model, auth middleware, rate limiting |
 | M6 | pending | FastAPI main app, all routers wired together |
 | M7 | pending | Streamlit frontend |
 
