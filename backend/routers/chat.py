@@ -1,13 +1,13 @@
 import json
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from db.database import get_db
 from backend.schemas.chat import (
-    ChatRequest,
+    ChatQueryBody,
     ChatResponse,
     ChatHistoryResponse,
     ChatMessageResponse,
@@ -15,6 +15,9 @@ from backend.schemas.chat import (
     SourceCitation,
 )
 from backend.services import rag_service
+from backend.middleware.auth_middleware import get_current_user
+from backend.middleware.rate_limit import limiter
+from backend.models.user import User
 from configs.logger import get_logger
 
 logger = get_logger(__name__)
@@ -22,15 +25,18 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 
-# ── POST /chat/query ──────────────────────────────────────────────────────────
-
 @router.post("/query", response_model=ChatResponse, status_code=status.HTTP_200_OK)
-def query(payload: ChatRequest, db: Session = Depends(get_db)):
-    """Run a RAG query and return the answer with source citations."""
+@limiter.limit("20/minute")
+def query(
+    request: Request,
+    payload: ChatQueryBody,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     try:
         result = rag_service.ask(
             db=db,
-            user_id=payload.user_id,
+            user_id=current_user.id,
             question=payload.question,
             session_id=payload.session_id,
         )
@@ -47,18 +53,17 @@ def query(payload: ChatRequest, db: Session = Depends(get_db)):
         )
 
 
-# ── POST /chat/stream ─────────────────────────────────────────────────────────
-
 @router.post("/stream")
-async def stream_query(payload: ChatRequest):
-    """Stream answer tokens via Server-Sent Events."""
+async def stream_query(
+    payload: ChatQueryBody,
+    current_user: User = Depends(get_current_user),
+):
     from core.rag_chain import get_rag_chain
-
     rag = get_rag_chain()
 
     async def event_generator():
         async for token in rag.stream_query(
-            user_id=payload.user_id,
+            user_id=current_user.id,
             question=payload.question,
             session_id=payload.session_id,
         ):
@@ -67,12 +72,13 @@ async def stream_query(payload: ChatRequest):
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
-# ── GET /chat/history ─────────────────────────────────────────────────────────
-
 @router.get("/history", response_model=ChatHistoryResponse)
-def get_history(user_id: str, session_id: str, db: Session = Depends(get_db)):
-    """Retrieve all messages for a specific session."""
-    messages = rag_service.get_chat_history(db, user_id, session_id)
+def get_history(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    messages = rag_service.get_chat_history(db, current_user.id, session_id)
     response_messages: List[ChatMessageResponse] = []
     for m in messages:
         sources = None
@@ -95,19 +101,20 @@ def get_history(user_id: str, session_id: str, db: Session = Depends(get_db)):
     return ChatHistoryResponse(session_id=session_id, messages=response_messages)
 
 
-# ── GET /chat/sessions ────────────────────────────────────────────────────────
-
 @router.get("/sessions", response_model=List[SessionInfo])
-def list_sessions(user_id: str, db: Session = Depends(get_db)):
-    """List all chat sessions for a user."""
-    sessions = rag_service.get_all_sessions(db, user_id)
+def list_sessions(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    sessions = rag_service.get_all_sessions(db, current_user.id)
     return [SessionInfo(**s) for s in sessions]
 
 
-# ── DELETE /chat/history ──────────────────────────────────────────────────────
-
 @router.delete("/history", status_code=status.HTTP_200_OK)
-def delete_history(user_id: str, session_id: str, db: Session = Depends(get_db)):
-    """Delete all messages in a session and reset the chain memory."""
-    deleted = rag_service.clear_history(db, user_id, session_id)
+def delete_history(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    deleted = rag_service.clear_history(db, current_user.id, session_id)
     return {"deleted_count": deleted, "session_id": session_id}

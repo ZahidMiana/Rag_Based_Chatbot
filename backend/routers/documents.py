@@ -1,23 +1,30 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, BackgroundTasks, Form
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, BackgroundTasks, Form, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from db.database import get_db
 from backend.services import doc_service
 from backend.schemas.document import DocumentResponse, DocumentStatusResponse
+from backend.middleware.auth_middleware import get_current_user
+from backend.middleware.rate_limit import limiter
+from backend.models.user import User
 from configs.settings import settings
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 
 @router.post("/upload", status_code=202)
+@limiter.limit("10/minute")
 async def upload_document(
+    request: Request,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     file: Optional[UploadFile] = File(default=None),
     url: Optional[str] = Form(default=None),
-    user_id: str = Form(...),  # replaced by JWT in Module 5
+    current_user: User = Depends(get_current_user),
 ):
+    user_id = current_user.id
+
     if not file and not url:
         raise HTTPException(status_code=400, detail="Provide a file or a URL")
 
@@ -42,7 +49,6 @@ async def upload_document(
         )
 
     else:
-        # URL ingestion
         import hashlib
         url_hash = hashlib.sha256(url.encode()).hexdigest()
         duplicate = doc_service.check_duplicate(db, user_id, url_hash)
@@ -58,21 +64,32 @@ async def upload_document(
 
 
 @router.get("/list", response_model=List[DocumentResponse])
-def list_documents(user_id: str, db: Session = Depends(get_db)):
-    return doc_service.get_documents(db, user_id)
+def list_documents(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return doc_service.get_documents(db, current_user.id)
 
 
 @router.get("/{doc_id}/status", response_model=DocumentStatusResponse)
-def get_status(doc_id: str, user_id: str, db: Session = Depends(get_db)):
-    result = doc_service.get_document_status(db, user_id, doc_id)
+def get_status(
+    doc_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = doc_service.get_document_status(db, current_user.id, doc_id)
     if not result:
         raise HTTPException(status_code=404, detail="Document not found")
     return result
 
 
 @router.delete("/{doc_id}", status_code=200)
-def delete_document(doc_id: str, user_id: str, db: Session = Depends(get_db)):
-    deleted = doc_service.delete_document(db, user_id, doc_id)
+def delete_document(
+    doc_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    deleted = doc_service.delete_document(db, current_user.id, doc_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Document not found")
     return {"message": "Document deleted"}
