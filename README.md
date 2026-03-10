@@ -130,7 +130,10 @@ streamlit run frontend/app.py --server.port 8501
 | `/chat/stream` | POST | Streaming answer (SSE) |
 | `/chat/history` | GET | Get session history |
 | `/chat/sessions` | GET | List all sessions |
-| `/admin/users` | GET | List users (admin) |
+| `/admin/users` | GET | List all users with doc count (admin) |
+| `/admin/users/{id}` | DELETE | Deactivate a user (admin) |
+| `/admin/stats` | GET | Total users, docs, queries today (admin) |
+| `/health` | GET | Service health check |
 
 ---
 
@@ -143,7 +146,7 @@ streamlit run frontend/app.py --server.port 8501
 | M3 | done | HuggingFace embeddings, ChromaDB per-user collections, MMR search |
 | M4 | done | Gemini LLM, RAG chain, conversation memory, chat API endpoints |
 | M5 | done | JWT auth, bcrypt, User model, auth middleware, rate limiting |
-| M6 | pending | FastAPI main app, all routers wired together |
+| M6 | done | FastAPI main app, all routers wired, CORS, logging middleware, admin panel |
 | M7 | pending | Streamlit frontend |
 
 ---
