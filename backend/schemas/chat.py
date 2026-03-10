@@ -9,6 +9,12 @@ class ChatRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=4000)
 
 
+class ChatQueryBody(BaseModel):
+    """JWT-protected endpoints — user_id comes from the token, not the body."""
+    session_id: str
+    question: str = Field(..., min_length=1, max_length=4000)
+
+
 class SourceCitation(BaseModel):
     doc_id: str
     filename: str

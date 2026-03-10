@@ -2,7 +2,6 @@ import os
 from typing import List, Dict, Any, Optional
 
 import chromadb
-from chromadb.config import Settings as ChromaSettings
 from langchain_chroma import Chroma
 from langchain.schema import Document
 
@@ -28,10 +27,7 @@ class VectorStoreManager:
 
     def __init__(self):
         os.makedirs(settings.CHROMA_DB_PATH, exist_ok=True)
-        self._client = chromadb.PersistentClient(
-            path=settings.CHROMA_DB_PATH,
-            settings=ChromaSettings(anonymized_telemetry=False),
-        )
+        self._client = chromadb.PersistentClient(path=settings.CHROMA_DB_PATH)
         self._embedding_fn = get_embedding_function()
         self._stores: Dict[str, Chroma] = {}  # cache per user_id
         logger.info("vectorstore_initialized", path=settings.CHROMA_DB_PATH)
