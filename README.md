@@ -147,7 +147,24 @@ streamlit run frontend/app.py --server.port 8501
 | M4 | done | Gemini LLM, RAG chain, conversation memory, chat API endpoints |
 | M5 | done | JWT auth, bcrypt, User model, auth middleware, rate limiting |
 | M6 | done | FastAPI main app, all routers wired, CORS, logging middleware, admin panel |
-| M7 | pending | Streamlit frontend |
+| M7 | done | Streamlit frontend — 6 pages: login, dashboard, chat, upload, my-docs, admin |
+
+---
+
+## Frontend UI (Module 7)
+
+The Streamlit frontend (`frontend/app.py`) matches a professional dark-navy SaaS design.
+
+| Page | Route key | Description |
+|---|---|---|
+| Login / Register | `login` | Split panel — branding left, auth form right |
+| Dashboard | `dashboard` | 4 stat cards + recent activity + recent docs |
+| Chat | `chat` | Session sidebar, chat bubbles, source citation cards |
+| Upload Documents | `upload` | Drag-drop zone, URL ingestion, per-file upload queue |
+| My Documents | `my_documents` | 3-col grid, filter tabs (All/Ready/Processing/Failed), delete |
+| Admin Panel | `admin` | Stats cards, user table, deactivate button (admin role only) |
+
+**Design tokens:** Background `#080D18` · Cards `#111827` · Accent `#3B82F6` · Font: Inter
 
 ---
 
