@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+from datetime import datetime, timezone, timedelta
 
 from db.database import get_db
 from backend.models.user import User
@@ -69,14 +70,14 @@ def get_stats(
     db: Session = Depends(get_db),
     _: User = Depends(require_admin),
 ):
-    today_str = date.today().isoformat()
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     total_users = db.query(User).count()
     total_docs = db.query(Document).count()
     queries_today = (
         db.query(ChatHistory)
         .filter(
             ChatHistory.role == "user",
-            ChatHistory.created_at >= today_str,
+            ChatHistory.created_at >= today_start.isoformat(),
         )
         .count()
     )
