@@ -1,8 +1,5 @@
-import uuid
-from datetime import datetime
-from sqlalchemy import create_engine, Column, String, Integer, DateTime, Text, Enum
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 from configs.settings import settings
 
 engine = create_engine(

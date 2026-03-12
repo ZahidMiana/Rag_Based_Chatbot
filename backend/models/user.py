@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Boolean, DateTime
 
 from db.database import Base
@@ -15,5 +15,5 @@ class User(Base):
     role = Column(String, default="user", nullable=False)  # "user" or "admin"
     is_active = Column(Boolean, default=True, nullable=False)
     refresh_token = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     last_login = Column(DateTime, nullable=True)

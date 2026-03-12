@@ -39,18 +39,16 @@ def _retry_on_rate_limit(max_retries: int = 3, base_delay: float = 2.0):
 
 def get_llm() -> ChatGoogleGenerativeAI:
     """
-    Returns singleton Gemini 1.5 Flash LLM instance.
-    Streaming enabled — supports token-by-token output.
+    Returns singleton Gemini Flash Lite LLM instance.
+    Uses gemini-flash-lite-latest — available on free tier.
     """
     global _llm_instance
     if _llm_instance is None:
         _llm_instance = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
+            model="gemini-flash-lite-latest",
             google_api_key=settings.GEMINI_API_KEY,
             temperature=0.3,
             max_output_tokens=2048,
-            streaming=True,
-            convert_system_message_to_human=True,
         )
-        logger.info("gemini_llm_initialized", model="gemini-1.5-flash")
+        logger.info("gemini_llm_initialized", model="gemini-flash-lite-latest")
     return _llm_instance

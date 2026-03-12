@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, DateTime, Text
 from db.database import Base
 
@@ -13,4 +13,4 @@ class ChatHistory(Base):
     role = Column(String, nullable=False)       # "user" or "assistant"
     content = Column(Text, nullable=False)
     sources = Column(Text, nullable=True)       # JSON-encoded list of source dicts
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
