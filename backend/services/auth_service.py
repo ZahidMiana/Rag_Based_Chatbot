@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+import bcrypt as _bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from backend.models.user import User
@@ -12,17 +12,22 @@ from configs.logger import get_logger
 
 logger = get_logger(__name__)
 
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)
+_BCRYPT_ROUNDS = 12
 
 
 # ── Password helpers ──────────────────────────────────────────────────────────
 
 def hash_password(plain: str) -> str:
-    return _pwd_context.hash(plain)
+    """Hash a plain-text password with bcrypt (works with bcrypt >=4, 5)."""
+    return _bcrypt.hashpw(plain.encode("utf-8"), _bcrypt.gensalt(rounds=_BCRYPT_ROUNDS)).decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return _pwd_context.verify(plain, hashed)
+    """Verify plain-text password against bcrypt hash."""
+    try:
+        return _bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+    except Exception:
+        return False
 
 
 # ── JWT helpers ───────────────────────────────────────────────────────────────
