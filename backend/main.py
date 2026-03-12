@@ -64,7 +64,12 @@ app.include_router(admin.router)
 # ── Exception handlers ────────────────────────────────────────────────────────
 @app.exception_handler(RequestValidationError)
 async def validation_handler(request: Request, exc: RequestValidationError):
-    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+    # Pydantic v2 errors() may contain non-JSON-serializable objects (e.g. ctx.error)
+    errors = [
+        {"loc": list(e["loc"]), "msg": e["msg"].removeprefix("Value error, "), "type": e["type"]}
+        for e in exc.errors()
+    ]
+    return JSONResponse(status_code=422, content={"detail": errors})
 
 
 @app.exception_handler(Exception)
