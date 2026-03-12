@@ -1,5 +1,4 @@
 # Environment
-.env
 *.env
 
 # Python
@@ -26,7 +25,6 @@ env/
 chroma_db/
 
 # IDE
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -47,3 +45,5 @@ tmp/
 .pytest_cache/
 .coverage
 htmlcov/
+config.bat
+node_modules
